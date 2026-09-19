@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: hirevia-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: COOKIE_NAME
+        value: jb_token
+      - key: CLIENT_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_SECURE
+        value: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: UPLOAD_DIR
+        value: uploads
+      - key: MAX_RESUME_SIZE
+        value: 5242880
+      - key: MAX_PHOTO_SIZE
+        value: 2097152
+      - key: AI_PROVIDER
+        value: ""
+      - key: AI_API_KEY
+        sync: false
+      - key: LOGIN_RATE_LIMIT_MAX
+        value: 10
+      - key: LOGIN_RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        value: urn:ietf:wg:oauth:2.0:oob
+      - key: GOOGLE_REFRESH_TOKEN
+        sync: false
