@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+// VITE_API_URL points at a separately-hosted backend (e.g. Railway) in
+// production. Locally — and if it's ever left unset — this stays empty so
+// every path below stays relative, which the Vite dev server proxies to
+// localhost:5000 (see vite.config.js). Concatenating an unset VITE_API_URL
+// directly used to bake the literal string "undefined/api" into every
+// request, breaking the entire app (every API call failed) whenever the
+// variable wasn't set.
+export const backendOrigin = import.meta.env.VITE_API_URL || '';
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: `${backendOrigin}/api`,
   withCredentials: true,
 });
 

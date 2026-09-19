@@ -18,10 +18,20 @@ function cookieMaxAgeMs() {
 }
 
 function setAuthCookie(res, token) {
+  const isProd = nodeEnv === 'production';
   res.cookie(cookieName, token, {
     httpOnly: true,
-    secure: nodeEnv === 'production',
-    sameSite: 'lax',
+    // In production the frontend and backend are typically on different
+    // domains (e.g. Vercel + Railway) — a genuinely cross-site setup.
+    // Browsers never send a SameSite=Lax cookie on cross-site fetch/XHR
+    // (only on top-level navigations), so with Lax the login response
+    // would set the cookie but it would silently never be sent back on
+    // any subsequent request, making the user look logged-out right
+    // after logging in. SameSite=None fixes that, and requires Secure —
+    // already true in production. Locally the app is same-origin (via
+    // the Vite dev proxy), where Lax is the safer, correct default.
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: cookieMaxAgeMs(),
     path: '/',
   });

@@ -90,7 +90,7 @@ export default function CandidateConnectionDetail() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-        <Avatar photoFilename={connection.company?.logo} name={connection.company?.name || connection.recruiter?.fullName} size={56} />
+        <Avatar photoFilename={connection.company?.logo} name={connection.company?.name || connection.recruiter?.fullName} size={56} kind="logo" />
         <div style={{ flex: 1 }}>
           <h1 style={{ margin: 0 }}>{connection.company?.name || connection.recruiter?.fullName}</h1>
           <p style={{ margin: 0 }}>

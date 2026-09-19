@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as recruiterService from '../../services/recruiterService';
+import { backendOrigin } from '../../services/api';
 import * as connectionService from '../../services/connectionService';
 import { useToast } from '../../context/ToastContext';
 import Avatar from '../../components/Avatar';
@@ -125,7 +126,7 @@ export default function RecruiterCandidateDetail() {
 
           <h3 style={{ marginTop: 20 }}>Resume</h3>
           {resume ? (
-            <a href={`/api/recruiters/candidates/${id}/resume/file`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
+            <a href={`${backendOrigin}/api/recruiters/candidates/${id}/resume/file`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
               View resume ({resume.fileType.toUpperCase()})
             </a>
           ) : (

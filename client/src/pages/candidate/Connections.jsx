@@ -34,7 +34,7 @@ export default function CandidateConnections() {
       ) : (
         connections.map((c) => (
           <Link to={`/candidate/connections/${c._id}`} key={c._id} className="card connection-row">
-            <Avatar photoFilename={c.company?.logo} name={c.company?.name || c.recruiter?.fullName} size={44} />
+            <Avatar photoFilename={c.company?.logo} name={c.company?.name || c.recruiter?.fullName} size={44} kind="logo" />
             <div style={{ flex: 1 }}>
               <strong>{c.company?.name || c.recruiter?.fullName}</strong>
               <p style={{ margin: 0 }}>
