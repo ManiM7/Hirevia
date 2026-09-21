@@ -25,6 +25,15 @@ module.exports = {
     from: process.env.SMTP_FROM || 'Hirevia <no-reply@hirevia.local>',
   },
 
+  // Many cloud hosts (Render's containers among them) block outbound SMTP
+  // ports entirely, so raw SMTP works locally but hangs/times out in
+  // production. SendGrid sends over HTTPS instead and is used in
+  // preference to SMTP whenever it's configured — see emailService.js.
+  sendgrid: {
+    apiKey: process.env.SENDGRID_API_KEY || '',
+    from: process.env.SENDGRID_FROM || process.env.SMTP_FROM || '',
+  },
+
   uploadDir: process.env.UPLOAD_DIR || 'uploads',
   maxResumeSize: parseInt(process.env.MAX_RESUME_SIZE || process.env.MAX_FILE_SIZE || '5242880', 10),
   maxPhotoSize: parseInt(process.env.MAX_PHOTO_SIZE || '2097152', 10),

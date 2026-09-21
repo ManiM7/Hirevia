@@ -1,7 +1,9 @@
 const nodemailer = require('nodemailer');
-const { smtp, clientUrl, nodeEnv } = require('../config/env');
+const sgMail = require('@sendgrid/mail');
+const { smtp, sendgrid, clientUrl, nodeEnv } = require('../config/env');
 
 let transporter = null;
+let sendgridConfigured = false;
 
 function getTransporter() {
   if (transporter) return transporter;
@@ -15,21 +17,39 @@ function getTransporter() {
   return transporter;
 }
 
+/** SendGrid sends over HTTPS, so it works on hosts that block outbound
+ * SMTP ports (Render's free tier among them) — preferred over SMTP
+ * whenever it's configured. */
+function getSendgrid() {
+  if (!sendgrid.apiKey || !sendgrid.from) return null;
+  if (!sendgridConfigured) {
+    sgMail.setApiKey(sendgrid.apiKey);
+    sendgridConfigured = true;
+  }
+  return sgMail;
+}
+
 /**
- * Sends an email via the configured SMTP transport. Throws if SMTP isn't
- * configured or the send fails — callers must not pretend an email was
+ * Sends an email via SendGrid (if configured) or SMTP. Throws if neither
+ * is configured or the send fails — callers must not pretend an email was
  * sent when it wasn't (see spec section 40).
  */
 async function sendMail({ to, subject, html, text }) {
+  const sg = getSendgrid();
+  if (sg) {
+    await sg.send({ to, from: sendgrid.from, subject, html, text });
+    return;
+  }
+
   const t = getTransporter();
   if (!t) {
     const err = new Error(
-      'Email delivery is not configured. Set SMTP_HOST, SMTP_USER and SMTP_PASS in the server .env file.'
+      'Email delivery is not configured. Set SENDGRID_API_KEY + SENDGRID_FROM, or SMTP_HOST + SMTP_USER + SMTP_PASS, in the server .env file.'
     );
-    err.code = 'SMTP_NOT_CONFIGURED';
+    err.code = 'EMAIL_NOT_CONFIGURED';
     throw err;
   }
-  return t.sendMail({ from: smtp.from, to, subject, html, text });
+  await t.sendMail({ from: smtp.from, to, subject, html, text });
 }
 
 async function sendTemporaryPasswordEmail({ to, fullName, temporaryPassword }) {
@@ -74,9 +94,9 @@ module.exports = {
   sendTemporaryPasswordEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
-  isConfigured: () => !!getTransporter(),
+  isConfigured: () => !!(getSendgrid() || getTransporter()),
 };
 
-if (nodeEnv !== 'production' && !getTransporter()) {
-  console.warn('[email] SMTP not configured — emails will fail to send until SMTP_HOST/SMTP_USER/SMTP_PASS are set in .env');
+if (nodeEnv !== 'production' && !getSendgrid() && !getTransporter()) {
+  console.warn('[email] Not configured — emails will fail to send until SENDGRID_API_KEY+SENDGRID_FROM or SMTP_HOST/SMTP_USER/SMTP_PASS are set in .env');
 }
