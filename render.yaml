@@ -54,3 +54,9 @@ services:
         value: urn:ietf:wg:oauth:2.0:oob
       - key: GOOGLE_REFRESH_TOKEN
         sync: false
+      - key: GMAIL_SENDER_EMAIL
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SENDGRID_FROM
+        sync: false
