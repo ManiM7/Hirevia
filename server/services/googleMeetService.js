@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const { google } = require('googleapis');
 const { google: googleConfig } = require('../config/env');
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 
 function isConfigured() {
   return Boolean(googleConfig.clientId && googleConfig.clientSecret && googleConfig.refreshToken);
@@ -21,10 +21,13 @@ function getOAuthClient(redirectUriOverride) {
  * `redirectUri` lets the setup script use its own local loopback callback
  * server — Google deprecated the old copy-paste "oob" flow for OAuth
  * clients created after Feb 2022, so a real redirect is required now.
+ * `scopes` defaults to just Calendar, but the setup script passes the
+ * combined list (Calendar + Gmail send) so one consent grant covers both
+ * features and they share a single refresh token.
  */
-function getAuthUrl(redirectUri) {
+function getAuthUrl(redirectUri, scopes = [CALENDAR_SCOPE]) {
   const client = getOAuthClient(redirectUri);
-  return client.generateAuthUrl({ access_type: 'offline', prompt: 'consent', scope: SCOPES });
+  return client.generateAuthUrl({ access_type: 'offline', prompt: 'consent', scope: scopes });
 }
 
 /** Used only by the one-time CLI setup script. */
@@ -100,4 +103,4 @@ async function deleteMeetingEvent(eventId) {
   }
 }
 
-module.exports = { isConfigured, getAuthUrl, exchangeCodeForTokens, createMeetingEvent, deleteMeetingEvent };
+module.exports = { isConfigured, getAuthUrl, exchangeCodeForTokens, createMeetingEvent, deleteMeetingEvent, CALENDAR_SCOPE };

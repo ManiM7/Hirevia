@@ -49,5 +49,10 @@ module.exports = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
     redirectUri: process.env.GOOGLE_REDIRECT_URI || 'urn:ietf:wg:oauth:2.0:oob',
     refreshToken: process.env.GOOGLE_REFRESH_TOKEN || '',
+    // The Gmail address the refresh token above was granted for — used as
+    // the "From" address when sending real mail via the Gmail API instead
+    // of SMTP (see services/gmailService.js). Sends over HTTPS, so it
+    // works on hosts that block outbound SMTP ports (e.g. Render).
+    gmailSenderEmail: process.env.GMAIL_SENDER_EMAIL || '',
   },
 };

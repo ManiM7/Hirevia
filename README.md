@@ -94,23 +94,27 @@ Copy `.env.example` to `server/.env` and fill in:
 | `UPLOAD_DIR`, `MAX_RESUME_SIZE`, `MAX_PHOTO_SIZE` | Upload limits |
 | `AI_PROVIDER`, `AI_API_KEY` | Optional — leave blank to use the deterministic rule-based candidate summary |
 
-## Email (SMTP) setup
+## Email setup
 
-Any standard SMTP provider works. For quick testing with Gmail:
+Three options, tried in this order — the first one configured wins. Registration correctly fails with an error rather than silently skipping the email if none are set up; the spec requires never pretending an email was sent.
+
+**Option A — Gmail API (recommended for production, especially on hosts like Render).** Sends over HTTPS via the same Google OAuth credentials used for Calendar/Meet below — one setup covers both. Some hosts (Render's free tier included) block outbound SMTP ports entirely, which this avoids. See the Google setup below; it requests both scopes together.
+
+**Option B — SendGrid.** Also sends over HTTPS. Sign up free at [sendgrid.com](https://sendgrid.com/) (100/day free), verify a "Single Sender" email under Settings → Sender Authentication (no domain required), create an API key under Settings → API Keys, and set `SENDGRID_API_KEY` + `SENDGRID_FROM` in `server/.env`.
+
+**Option C — SMTP.** Works locally; may be blocked outbound on some hosts in production. For quick local testing with Gmail:
 1. Enable 2-Step Verification on the Google account.
 2. Create an [App Password](https://myaccount.google.com/apppasswords).
 3. Set `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_SECURE=false`, `SMTP_USER=<address>`, `SMTP_PASS=<app password>`.
 
-If SMTP isn't configured, registration correctly fails with an error rather than silently skipping the email — the spec requires never pretending an email was sent.
+## Google Calendar / Meet + Gmail send setup
 
-## Google Calendar / Meet setup (interview scheduling)
+One OAuth grant covers both real interview scheduling (Google Meet links) and Option A above (sending real email via the Gmail API). Skip this and scheduling correctly fails with a clear setup error instead of ever faking a meeting link; email falls through to SendGrid/SMTP instead.
 
-Required only for recruiters to confirm interviews (real Google Meet links). Without it, scheduling correctly fails with a clear setup error instead of ever faking a meeting link.
-
-1. In the [Google Cloud Console](https://console.cloud.google.com/), create a project (or use an existing one) and enable the **Google Calendar API**.
+1. In the [Google Cloud Console](https://console.cloud.google.com/), create a project (or use an existing one) and enable both the **Google Calendar API** and the **Gmail API**.
 2. Create an OAuth 2.0 Client ID of type **Desktop app**. Copy the Client ID and Client Secret into `server/.env` as `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
-3. Run `npm run google:auth` from `server/` — it prints a Google consent URL. Open it, sign in with the Google account that should organize interview meetings, approve access, and paste the code back into the terminal.
-4. The script prints a `GOOGLE_REFRESH_TOKEN` — add it to `server/.env` and restart the server.
+3. Run `npm run google:auth` from `server/` — it prints a Google consent URL. Open it, sign in with the Google account that should organize interview meetings and send registration emails, and approve access. The script catches the redirect automatically (no copy-paste).
+4. The script prints a `GOOGLE_REFRESH_TOKEN` — add it to `server/.env`, along with `GMAIL_SENDER_EMAIL=<the address you signed in with>`, and restart the server.
 
 The refresh token is a long-lived credential stored only in `.env`, the same way every other secret in this project is configured — nothing is written to the database.
 

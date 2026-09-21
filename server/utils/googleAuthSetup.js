@@ -1,28 +1,33 @@
 /**
- * One-time interactive setup for Google Calendar/Meet integration.
+ * One-time interactive setup for Google Calendar/Meet AND Gmail-API
+ * sending — a single consent grant covers both, since they share one
+ * OAuth client and refresh token.
  *
  * Prerequisite: create an OAuth 2.0 Client ID (type "Desktop app") in the
- * Google Cloud Console for a project with the Google Calendar API enabled,
- * and put its Client ID/Secret in server/.env as GOOGLE_CLIENT_ID /
- * GOOGLE_CLIENT_SECRET first.
+ * Google Cloud Console for a project with the Google Calendar API AND the
+ * Gmail API enabled, and put its Client ID/Secret in server/.env as
+ * GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET first.
  *
  * Usage:
  *   npm run google:auth
  *
  * This starts a temporary local server, opens (or prints) a Google consent
  * URL — sign in with the Google account that should organize interview
- * meetings and approve access. Google redirects back to this local server
- * automatically with the authorization code (no manual copy-paste; the
- * old "oob" copy-paste flow is deprecated by Google for OAuth clients
- * created after Feb 2022 and will fail for a newly created client). The
- * script exchanges that code for a refresh token and prints it — copy it
- * into server/.env as GOOGLE_REFRESH_TOKEN. Nothing is written to the
- * database; the token only ever lives in your .env file.
+ * meetings and send registration emails, and approve access. Google
+ * redirects back to this local server automatically with the
+ * authorization code (no manual copy-paste; the old "oob" copy-paste flow
+ * is deprecated by Google for OAuth clients created after Feb 2022 and
+ * will fail for a newly created client). The script exchanges that code
+ * for a refresh token and prints it — copy it into server/.env as
+ * GOOGLE_REFRESH_TOKEN (replacing any earlier one — it now needs to cover
+ * both scopes). Nothing is written to the database; the token only ever
+ * lives in your .env file.
  */
 require('dotenv').config();
 const http = require('http');
 const { URL } = require('url');
 const googleMeetService = require('../services/googleMeetService');
+const gmailService = require('../services/gmailService');
 const { google } = require('../config/env');
 
 async function main() {
@@ -59,8 +64,8 @@ async function main() {
     });
   });
 
-  const authUrl = googleMeetService.getAuthUrl(redirectUri);
-  console.log('\nOpen this URL in your browser and approve access with the Google account\nthat should organize interview meetings:\n');
+  const authUrl = googleMeetService.getAuthUrl(redirectUri, [googleMeetService.CALENDAR_SCOPE, gmailService.GMAIL_SEND_SCOPE]);
+  console.log('\nOpen this URL in your browser and approve access with the Google account\nthat should organize interview meetings and send registration emails:\n');
   console.log(authUrl);
   console.log('\nWaiting for you to approve access...');
 
@@ -76,9 +81,10 @@ async function main() {
       process.exit(1);
     }
 
-    console.log('\nSuccess! Add this line to server/.env:\n');
+    console.log('\nSuccess! Update these lines in server/.env:\n');
     console.log(`GOOGLE_REFRESH_TOKEN=${tokens.refresh_token}`);
-    console.log('\nThen restart the server. Interview scheduling will now create real Google Meet links.');
+    console.log('GMAIL_SENDER_EMAIL=<the Gmail address you just signed in with>');
+    console.log('\nThen restart the server. Interview scheduling will create real Google Meet links, and registration/reset emails will send via the Gmail API.');
     process.exit(0);
   } catch (err) {
     server.close();

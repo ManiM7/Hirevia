@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
+const gmailService = require('./gmailService');
 const { smtp, sendgrid, clientUrl, nodeEnv } = require('../config/env');
 
 let transporter = null;
@@ -30,11 +31,17 @@ function getSendgrid() {
 }
 
 /**
- * Sends an email via SendGrid (if configured) or SMTP. Throws if neither
- * is configured or the send fails — callers must not pretend an email was
- * sent when it wasn't (see spec section 40).
+ * Sends an email via the Gmail API, then SendGrid, then SMTP — whichever
+ * is configured first. Throws if none are configured or the send fails —
+ * callers must not pretend an email was sent when it wasn't (see spec
+ * section 40).
  */
 async function sendMail({ to, subject, html, text }) {
+  if (gmailService.isConfigured()) {
+    await gmailService.sendMail({ to, subject, html, text });
+    return;
+  }
+
   const sg = getSendgrid();
   if (sg) {
     await sg.send({ to, from: sendgrid.from, subject, html, text });
@@ -44,7 +51,7 @@ async function sendMail({ to, subject, html, text }) {
   const t = getTransporter();
   if (!t) {
     const err = new Error(
-      'Email delivery is not configured. Set SENDGRID_API_KEY + SENDGRID_FROM, or SMTP_HOST + SMTP_USER + SMTP_PASS, in the server .env file.'
+      'Email delivery is not configured. Set up Gmail API (GOOGLE_CLIENT_ID/SECRET, GOOGLE_REFRESH_TOKEN, GMAIL_SENDER_EMAIL), or SENDGRID_API_KEY + SENDGRID_FROM, or SMTP_HOST + SMTP_USER + SMTP_PASS, in the server .env file.'
     );
     err.code = 'EMAIL_NOT_CONFIGURED';
     throw err;
@@ -94,9 +101,9 @@ module.exports = {
   sendTemporaryPasswordEmail,
   sendPasswordChangedEmail,
   sendPasswordResetEmail,
-  isConfigured: () => !!(getSendgrid() || getTransporter()),
+  isConfigured: () => !!(gmailService.isConfigured() || getSendgrid() || getTransporter()),
 };
 
-if (nodeEnv !== 'production' && !getSendgrid() && !getTransporter()) {
-  console.warn('[email] Not configured — emails will fail to send until SENDGRID_API_KEY+SENDGRID_FROM or SMTP_HOST/SMTP_USER/SMTP_PASS are set in .env');
+if (nodeEnv !== 'production' && !gmailService.isConfigured() && !getSendgrid() && !getTransporter()) {
+  console.warn('[email] Not configured — emails will fail to send until Gmail API, SendGrid, or SMTP is set up in .env');
 }
